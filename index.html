@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Neon OS Cloud</title>
+
+<style>
+body{margin:0;font-family:Segoe UI;background:#0b0b0b;color:white;display:flex;}
+.sidebar{width:260px;background:#111;padding:15px;height:100vh;overflow:auto;}
+.folder{padding:10px;margin:6px 0;border-radius:8px;background:#151515;cursor:pointer;}
+.main{flex:1;padding:20px;}
+.card{background:#111;padding:20px;border-radius:12px;margin-top:20px;}
+.link{display:flex;justify-content:space-between;background:#0d0d0d;padding:8px;margin:5px 0;border-radius:6px;}
+.sap{border-left:4px solid #ff0077;padding:10px;margin:10px 0;background:#111;}
+.vault{background:#111;padding:10px;margin:10px 0;border-radius:8px;}
+.edit{position:fixed;right:20px;top:80px;background:#ff0077;padding:10px;border-radius:50px;cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h3>⚡ OS</h3>
+<button onclick="showDashboard()">🏠 Dashboard</button>
+<button onclick="showSAP()">🧠 SAP</button>
+<button onclick="openVault()">🔐 Vault</button>
+<button onclick="showVacation()">📅 Vacation</button>
+<hr>
+<div id="folders"></div>
+<button onclick="addFolder()">+ Folder</button>
+</div>
+
+<div class="main">
+<div id="content"></div>
+</div>
+
+<div class="edit" onclick="toggleEdit()" id="editBtn">OFF</div>
+
+<script>
+let edit=false,currentFolder=null;
+
+let db={
+folders:[],
+sap:[],
+vault:[],
+vaultPass:null,
+vacation:{total:20,booked:[],extra:[]},
+notes:""
+};
+
+/* INIT AFTER FIREBASE LOAD */
+async function init(){
+let cloud=await loadFromCloud();
+if(cloud) db=cloud;
+renderFolders();
+showDashboard();
+}
+
+function save(){ saveToCloud(db); }
+
+/* EDIT */
+function toggleEdit(){edit=!edit;editBtn.innerText=edit?"EDIT ON":"OFF";}
+
+/* DASHBOARD */
+function showDashboard(){
+let c=content;
+c.innerHTML=`
+<div class="card">
+<h2>Dashboard</h2>
+<div id="time"></div>
+<textarea id="note" style="width:100%;height:80px">${db.notes}</textarea>
+<button onclick="saveNote()">Save</button>
+</div>`;
+
+setInterval(()=>{time.innerText=new Date().toLocaleString();},1000);
+}
+function saveNote(){db.notes=note.value;save();}
+
+/* FOLDERS */
+function renderFolders(){
+folders.innerHTML="";
+db.folders.forEach((f,i)=>{
+folders.innerHTML+=`
+<div class="folder" onclick="openFolder(${i})">
+${f.name}
+${edit?`<button onclick="event.stopPropagation();editFolder(${i})">✏️</button>
+<button onclick="event.stopPropagation();delFolder(${i})">🗑</button>`:""}
+</div>`;
+});
+}
+function addFolder(){if(!edit)return;db.folders.push({name:prompt("Name"),links:[]});save();renderFolders();}
+function editFolder(i){db.folders[i].name=prompt("Name",db.folders[i].name);save();renderFolders();}
+function delFolder(i){db.folders.splice(i,1);save();renderFolders();}
+function openFolder(i){
+currentFolder=i;
+let f=db.folders[i];
+content.innerHTML=`<div class="card"><h2>${f.name}</h2>`;
+f.links.forEach((l,idx)=>{
+content.innerHTML+=`
+<div class="link">
+<a href="${l.url}" target="_blank">${l.name}</a>
+${edit?`<span>
+<button onclick="editLink(${idx})">✏️</button>
+<button onclick="delLink(${idx})">🗑</button>
+</span>`:""}
+</div>`;
+});
+if(edit)content.innerHTML+=`<button onclick="addLink()">+ Link</button>`;
+content.innerHTML+="</div>";
+}
+function addLink(){db.folders[currentFolder].links.push({name:prompt("Name"),url:prompt("URL")});save();openFolder(currentFolder);}
+function editLink(i){
+let l=db.folders[currentFolder].links[i];
+l.name=prompt("Name",l.name);
+l.url=prompt("URL",l.url);
+save();openFolder(currentFolder);
+}
+function delLink(i){db.folders[currentFolder].links.splice(i,1);save();openFolder(currentFolder);}
+
+/* SAP */
+function showSAP(){
+content.innerHTML="<h2>SAP</h2>";
+db.sap.forEach((s,i)=>{
+content.innerHTML+=`
+<div class="sap">
+<b>${s.c}</b><br>${s.d}<br><small>${s.u}</small>
+${edit?`<br><button onclick="editSAP(${i})">✏️</button>
+<button onclick="delSAP(${i})">🗑</button>`:""}
+</div>`;
+});
+if(edit)content.innerHTML+=`<button onclick="addSAP()">+ Add</button>`;
+}
+function addSAP(){db.sap.push({c:prompt("Code"),d:prompt("Desc"),u:prompt("Usage")});save();showSAP();}
+function editSAP(i){
+let s=db.sap[i];
+s.c=prompt("Code",s.c);
+s.d=prompt("Desc",s.d);
+s.u=prompt("Usage",s.u);
+save();showSAP();
+}
+function delSAP(i){db.sap.splice(i,1);save();showSAP();}
+
+/* VAULT */
+function openVault(){
+if(!db.vaultPass){db.vaultPass=prompt("Set password");save();}
+let p=prompt("Enter password");
+if(p!==db.vaultPass)return alert("Wrong");
+renderVault();
+}
+function renderVault(){
+content.innerHTML="<h2>Vault</h2>";
+db.vault.forEach((v,i)=>{
+content.innerHTML+=`
+<div class="vault">
+<b>${v.name}</b><br>${v.user}<br>
+**** <button onclick="alert('${v.pass}')">👁</button>
+${edit?`<br><button onclick="editVault(${i})">✏️</button>
+<button onclick="delVault(${i})">🗑</button>`:""}
+</div>`;
+});
+if(edit)content.innerHTML+=`<button onclick="addVault()">+ Add</button>`;
+}
+function addVault(){db.vault.push({name:prompt("Name"),user:prompt("User"),pass:prompt("Pass")});save();renderVault();}
+function editVault(i){
+let v=db.vault[i];
+v.name=prompt("Name",v.name);
+v.user=prompt("User",v.user);
+v.pass=prompt("Pass",v.pass);
+save();renderVault();
+}
+function delVault(i){db.vault.splice(i,1);save();renderVault();}
+
+/* VACATION */
+function showVacation(){
+let used=0;
+db.vacation.booked.forEach(b=>used+=+b.days);
+let extra=db.vacation.extra.reduce((a,b)=>a+ +b.days,0);
+let total=db.vacation.total+extra;
+let left=total-used;
+
+content.innerHTML=`
+<div class="card">
+<h2>Vacation</h2>
+Total:${total}<br>Used:${used}<br>Left:${left}<br>
+<button onclick="addVacation()">+ Book</button>
+<button onclick="addExtra()">+ Extra</button>
+</div>
+
+<div class="card">
+<h3>Bookings</h3>
+${db.vacation.booked.map((b,i)=>`
+<div>${b.date}|${b.days}|${b.reason}
+${edit?`<button onclick="editVac(${i})">✏️</button>
+<button onclick="delVac(${i})">🗑</button>`:""}
+</div>`).join("")}
+</div>
+
+<div class="card">
+<h3>Extra Days</h3>
+${db.vacation.extra.map(e=>`<div>${e.days}|${e.reason}</div>`).join("")}
+</div>`;
+}
+function addVacation(){db.vacation.booked.push({date:prompt("Date"),days:prompt("Days"),reason:prompt("Reason")});save();showVacation();}
+function editVac(i){
+let v=db.vacation.booked[i];
+v.date=prompt("Date",v.date);
+v.days=prompt("Days",v.days);
+v.reason=prompt("Reason",v.reason);
+save();showVacation();
+}
+function delVac(i){db.vacation.booked.splice(i,1);save();showVacation();}
+function addExtra(){db.vacation.extra.push({days:prompt("Days"),reason:prompt("Reason")});save();showVacation();}
+</script>
+
+<!-- FIREBASE (DO NOT TOUCH) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBXzH-_cw3CFTPiY0ear6xfncxitL86UrQ",
+  authDomain: "my-dashboard-bc896.firebaseapp.com",
+  projectId: "my-dashboard-bc896",
+  storageBucket: "my-dashboard-bc896.firebasestorage.app",
+  messagingSenderId: "471529292578",
+  appId: "1:471529292578:web:8092ccca8f7888cff8db7b"
+};
+
+const app = initializeApp(firebaseConfig);
+const dbCloud = getFirestore(app);
+
+window.saveToCloud = async function(data){
+  await setDoc(doc(dbCloud, "dashboard", "main"), data);
+}
+
+window.loadFromCloud = async function(){
+  const snap = await getDoc(doc(dbCloud, "dashboard", "main"));
+  return snap.exists()?snap.data():null;
+}
+
+/* START APP AFTER FIREBASE */
+init();
+</script>
+
+</body>
+</html>
