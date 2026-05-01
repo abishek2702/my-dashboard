@@ -1,4 +1,336 @@
-<!-- ONLY SHOWING IMPORTANT PARTS MODIFIED -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Links</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#05060a;
+  --panel:rgba(15,18,30,.72);
+  --panel2:rgba(255,255,255,.07);
+  --cyan:#00f5ff;
+  --pink:#ff2bd6;
+  --purple:#8b5cf6;
+  --green:#22c55e;
+  --yellow:#facc15;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Segoe UI,Arial,sans-serif;
+  color:var(--text);
+  display:flex;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,245,255,.22), transparent 28%),
+    radial-gradient(circle at 80% 30%, rgba(255,43,214,.18), transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(139,92,246,.20), transparent 28%),
+    var(--bg);
+  overflow-x:hidden;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:linear-gradient(120deg, transparent, rgba(255,255,255,.08), transparent);
+  animation:shine 8s linear infinite;
+  pointer-events:none;
+}
+
+@keyframes shine{
+  0%{transform:translateX(-100%)}
+  100%{transform:translateX(100%)}
+}
+
+.sidebar{
+  width:280px;
+  min-height:100vh;
+  padding:18px;
+  background:rgba(5,8,15,.75);
+  backdrop-filter:blur(18px);
+  border-right:1px solid rgba(255,255,255,.12);
+  box-shadow:0 0 35px rgba(0,245,255,.08);
+}
+
+.logo{
+  font-size:30px;
+  font-weight:800;
+  letter-spacing:.5px;
+  margin-bottom:18px;
+  color:white;
+  text-shadow:0 0 18px var(--cyan);
+}
+
+.nav button,.add-btn{
+  width:100%;
+  margin:6px 0;
+  padding:11px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  background:linear-gradient(135deg, rgba(0,245,255,.12), rgba(255,43,214,.08));
+  color:white;
+  cursor:pointer;
+  text-align:left;
+  transition:.25s;
+}
+
+.nav button:hover,.add-btn:hover{
+  transform:translateX(4px);
+  box-shadow:0 0 18px rgba(0,245,255,.35);
+}
+
+.folder{
+  padding:11px;
+  margin:8px 0;
+  border-radius:14px;
+  background:rgba(255,255,255,.06);
+  border-left:4px solid var(--cyan);
+  cursor:pointer;
+  transition:.25s;
+}
+
+.folder:hover{
+  background:rgba(0,245,255,.12);
+  box-shadow:0 0 15px rgba(0,245,255,.25);
+}
+
+.main{
+  flex:1;
+  padding:26px;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.search{
+  width:100%;
+  max-width:460px;
+  padding:13px 16px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.07);
+  color:white;
+  outline:none;
+}
+
+.search:focus{
+  box-shadow:0 0 18px rgba(0,245,255,.35);
+}
+
+.edit{
+  position:fixed;
+  right:22px;
+  top:22px;
+  z-index:9;
+  padding:12px 18px;
+  border-radius:999px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  color:white;
+  cursor:pointer;
+  border:none;
+  box-shadow:0 0 22px rgba(255,43,214,.45);
+}
+
+.edit.on{
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  box-shadow:0 0 22px rgba(34,197,94,.5);
+}
+
+.card{
+  position:relative;
+  overflow:hidden;
+  background:var(--panel);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;
+  padding:22px;
+  margin:16px 0;
+  box-shadow:0 0 28px rgba(0,245,255,.10);
+  animation:pop .35s ease;
+}
+
+.card:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:24px;
+  padding:1px;
+  background:linear-gradient(135deg,var(--cyan),var(--pink),var(--purple));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  opacity:.45;
+  pointer-events:none;
+}
+
+@keyframes pop{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:16px;
+}
+
+.stat{
+  background:linear-gradient(135deg,rgba(0,245,255,.12),rgba(255,43,214,.10));
+  border:1px solid rgba(255,255,255,.12);
+  padding:18px;
+  border-radius:20px;
+  box-shadow:0 0 18px rgba(139,92,246,.15);
+}
+
+.stat h3{margin:0;color:var(--muted);font-size:14px}
+.stat div{font-size:28px;font-weight:800;margin-top:8px;color:white}
+
+textarea,input{
+  background:rgba(255,255,255,.07);
+  color:white;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  padding:12px;
+  outline:none;
+}
+
+textarea{width:100%;min-height:130px}
+
+button{
+  border:none;
+  border-radius:12px;
+  padding:8px 11px;
+  margin:3px;
+  cursor:pointer;
+  background:rgba(0,245,255,.16);
+  color:white;
+  transition:.2s;
+}
+
+button:hover{
+  box-shadow:0 0 14px rgba(0,245,255,.35);
+  transform:translateY(-1px);
+}
+
+.danger{background:rgba(255,43,43,.22)}
+.good{background:rgba(34,197,94,.22)}
+.pink{background:rgba(255,43,214,.22)}
+
+.link,.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  padding:12px;
+  background:rgba(255,255,255,.06);
+  border-radius:16px;
+  margin:9px 0;
+}
+
+.link a{color:#dffcff;text-decoration:none}
+.link a:hover{color:var(--cyan)}
+
+.sap{
+  border-left:5px solid var(--pink);
+  background:rgba(255,255,255,.06);
+  border-radius:18px;
+  padding:15px;
+  margin:12px 0;
+}
+
+.sap-code{
+  font-size:22px;
+  font-weight:900;
+  color:var(--cyan);
+  text-shadow:0 0 14px rgba(0,245,255,.45);
+}
+
+.sap-desc{color:#cbd5e1;margin-top:5px}
+.sap-use{color:var(--yellow);font-size:13px;margin-top:6px}
+
+.vault{
+  border:1px solid rgba(255,43,214,.28);
+  background:linear-gradient(135deg,rgba(255,43,214,.10),rgba(0,245,255,.08));
+  border-radius:20px;
+  padding:15px;
+  margin:12px 0;
+  box-shadow:0 0 20px rgba(255,43,214,.15);
+}
+
+.small{color:var(--muted);font-size:13px}
+
+.glow-title{
+  text-shadow:0 0 18px var(--cyan),0 0 35px var(--purple);
+}
+
+.pinned-link{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  margin:8px 0;
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(0,245,255,.12),rgba(255,43,214,.10));
+  box-shadow:0 0 16px rgba(0,245,255,.14);
+}
+
+.pulse{
+  animation:pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow{
+  0%{box-shadow:0 0 8px rgba(0,245,255,.25)}
+  50%{box-shadow:0 0 24px rgba(255,43,214,.45)}
+  100%{box-shadow:0 0 8px rgba(0,245,255,.25)}
+}
+
+@media(max-width:800px){
+  body{flex-direction:column}
+  .sidebar{width:100%;min-height:auto}
+  .main{padding:16px}
+  .edit{top:12px;right:12px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <div class="logo">⚡ Links</div>
+
+  <div class="nav">
+    <button onclick="showDashboard()">🏠 Dashboard</button>
+    <button onclick="showSAP()">🧠 SAP</button>
+    <button onclick="openVault()">🔐 Vault</button>
+    <button onclick="showVacation()">📅 Vacation</button>
+  </div>
+
+  <hr style="border-color:rgba(255,255,255,.12)">
+
+  <h3>📁 Folders</h3>
+  <div id="folders"></div>
+  <button class="add-btn" onclick="addFolder()">+ Add Folder</button>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <input class="search" placeholder="Search links, SAP, vault, vacation..." oninput="searchAll(this.value)">
+  </div>
+  <div id="content"></div>
+</div>
+
+<button class="edit" onclick="toggleEdit()" id="editBtn">✏️ EDIT OFF</button>
 
 <script>
 let edit=false,currentFolder=null,vaultOpen=false,timer=null;
@@ -9,15 +341,16 @@ let db={
   vault:[],
   vaultPass:null,
   vacation:{total:20,booked:[],extra:[]},
-  notes:"",
-  reminders:[] // ✅ NEW
+  notes:""
 };
 
 async function init(){
   let cloud=await loadFromCloud();
   if(cloud){
     db={...db,...cloud};
-    if(!db.reminders) db.reminders=[]; // ✅ ensure exists
+    if(!db.vacation) db.vacation={total:20,booked:[],extra:[]};
+    if(!db.vacation.booked) db.vacation.booked=[];
+    if(!db.vacation.extra) db.vacation.extra=[];
   }
   renderFolders();
   showDashboard();
@@ -25,19 +358,28 @@ async function init(){
 
 function save(){ saveToCloud(db); }
 
-/* REMINDERS FUNCTIONS */
-function addReminder(){
-  let text=prompt("Reminder");
-  if(!text)return;
-  db.reminders.push(text);
-  save();
-  showDashboard();
+function toggleEdit(){
+  edit=!edit;
+  editBtn.innerText=edit?"✏️ EDIT ON":"✏️ EDIT OFF";
+  editBtn.classList.toggle("on",edit);
+  renderFolders();
 }
 
-function completeReminder(i){
-  db.reminders.splice(i,1);
-  save();
-  showDashboard();
+function escapeText(x){
+  return String(x ?? "").replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+}
+
+function getWeekNumber(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+}
+
+function getDayOfYear(date){
+  const start = new Date(date.getFullYear(),0,0);
+  return Math.floor((date - start) / 86400000);
 }
 
 /* DASHBOARD */
@@ -49,8 +391,16 @@ function showDashboard(){
   let extra=db.vacation.extra.reduce((a,b)=>a+(+b.days||0),0);
   let total=(+db.vacation.total||20)+extra;
   let left=total-used;
-
   let totalLinks=db.folders.reduce((a,f)=>a+(f.links?f.links.length:0),0);
+
+  let pinned=[];
+  db.folders.forEach((f,fi)=>{
+    (f.links||[]).forEach((l,li)=>{
+      if(l.pinned){
+        pinned.push({...l,folder:f.name,fi,li});
+      }
+    });
+  });
 
   content.innerHTML=`
     <div class="card pulse">
@@ -67,28 +417,25 @@ function showDashboard(){
       <div class="stat"><h3>Vacation Left</h3><div>${left}</div></div>
     </div>
 
-    <!-- ✅ REMINDERS -->
     <div class="card">
-      <h2>📝 Reminders</h2>
-      <button class="good" onclick="addReminder()">+ Add Reminder</button>
-
+      <h2>⭐ Pinned Links</h2>
       ${
-        db.reminders.length
-        ? db.reminders.map((r,i)=>`
-          <div class="row">
+        pinned.length
+        ? pinned.map(p=>`
+          <div class="pinned-link">
             <div>
-              <input type="checkbox" onclick="completeReminder(${i})">
-              ${r}
+              <a href="${escapeText(p.url)}" target="_blank">${escapeText(p.name)}</a>
+              <div class="small">📁 ${escapeText(p.folder)}</div>
             </div>
           </div>
         `).join("")
-        : "<div class='small'>No reminders yet</div>"
+        : "<div class='small'>No pinned links yet. Open a folder, turn EDIT ON, and pin links.</div>"
       }
     </div>
 
     <div class="card">
       <h2>📝 Notes</h2>
-      <textarea id="note">${db.notes}</textarea><br>
+      <textarea id="note">${escapeText(db.notes)}</textarea><br>
       <button class="good" onclick="saveNote()">Save Notes</button>
     </div>
   `;
@@ -116,5 +463,387 @@ function showDashboard(){
 function saveNote(){
   db.notes=note.value;
   save();
+  alert("Notes saved");
+}
+
+/* FOLDERS */
+function renderFolders(){
+  folders.innerHTML="";
+  db.folders.forEach((f,i)=>{
+    folders.innerHTML+=`
+      <div class="folder" onclick="openFolder(${i})">
+        <span>📁 ${escapeText(f.name)}</span>
+        ${edit?`
+          <div>
+            <button onclick="event.stopPropagation();editFolder(${i})">✏️</button>
+            <button class="danger" onclick="event.stopPropagation();delFolder(${i})">🗑</button>
+          </div>`:""}
+      </div>`;
+  });
+}
+
+function addFolder(){
+  if(!edit)return alert("Turn EDIT ON first");
+  let name=prompt("Folder name");
+  if(!name)return;
+  db.folders.push({name,links:[]});
+  save();renderFolders();
+}
+
+function editFolder(i){
+  let name=prompt("Folder name",db.folders[i].name);
+  if(!name)return;
+  db.folders[i].name=name;
+  save();renderFolders();openFolder(i);
+}
+
+function delFolder(i){
+  if(!confirm("Delete this folder and its links?"))return;
+  db.folders.splice(i,1);
+  currentFolder=null;
+  save();renderFolders();showDashboard();
+}
+
+function openFolder(i){
+  vaultOpen=false;
+  clearInterval(timer);
+  currentFolder=i;
+  let f=db.folders[i];
+  if(!f.links)f.links=[];
+
+  content.innerHTML=`
+    <div class="card">
+      <h1>📁 ${escapeText(f.name)}</h1>
+      ${edit?`<button class="good" onclick="addLink()">+ Add Link</button>`:""}
+      <div id="linkList"></div>
+    </div>
+  `;
+
+  linkList.innerHTML=f.links.map((l,idx)=>`
+    <div class="link">
+      <a href="${escapeText(l.url)}" target="_blank">
+        ${l.pinned ? "⭐ " : ""}${escapeText(l.name)}
+      </a>
+      ${edit?`
+        <span>
+          <button onclick="togglePin(${idx})">${l.pinned ? "Unpin" : "Pin"}</button>
+          <button onclick="editLink(${idx})">✏️</button>
+          <button class="danger" onclick="delLink(${idx})">🗑</button>
+        </span>`:""}
+    </div>
+  `).join("");
+}
+
+function addLink(){
+  let name=prompt("Link name");
+  let url=prompt("URL");
+  if(!name||!url)return;
+  db.folders[currentFolder].links.push({name,url,pinned:false});
+  save();openFolder(currentFolder);
+}
+
+function editLink(i){
+  let l=db.folders[currentFolder].links[i];
+  l.name=prompt("Link name",l.name)||l.name;
+  l.url=prompt("URL",l.url)||l.url;
+  save();openFolder(currentFolder);
+}
+
+function delLink(i){
+  if(!confirm("Delete this link?"))return;
+  db.folders[currentFolder].links.splice(i,1);
+  save();openFolder(currentFolder);
+}
+
+function togglePin(i){
+  let l=db.folders[currentFolder].links[i];
+  l.pinned=!l.pinned;
+  save();
+  openFolder(currentFolder);
+}
+
+/* SAP */
+function showSAP(){
+  vaultOpen=false;
+  clearInterval(timer);
+  content.innerHTML=`
+    <div class="card">
+      <h1>🧠 SAP</h1>
+      ${edit?`<button class="good" onclick="addSAP()">+ Add SAP</button>`:""}
+      <div id="sapList"></div>
+    </div>
+  `;
+
+  sapList.innerHTML=db.sap.map((s,i)=>`
+    <div class="sap">
+      <div class="sap-code">${escapeText(s.c)}</div>
+      <div class="sap-desc">${escapeText(s.d)}</div>
+      <div class="sap-use">${escapeText(s.u)}</div>
+      ${edit?`
+        <button onclick="editSAP(${i})">✏️ Edit</button>
+        <button class="danger" onclick="delSAP(${i})">🗑 Delete</button>`:""}
+    </div>
+  `).join("");
+}
+
+function addSAP(){
+  db.sap.push({c:prompt("Code"),d:prompt("Description"),u:prompt("Usage")});
+  save();showSAP();
+}
+
+function editSAP(i){
+  let s=db.sap[i];
+  s.c=prompt("Code",s.c)||s.c;
+  s.d=prompt("Description",s.d)||s.d;
+  s.u=prompt("Usage",s.u)||s.u;
+  save();showSAP();
+}
+
+function delSAP(i){
+  if(!confirm("Delete SAP entry?"))return;
+  db.sap.splice(i,1);
+  save();showSAP();
+}
+
+/* VAULT */
+function openVault(){
+  clearInterval(timer);
+  if(!db.vaultPass){
+    let p=prompt("Set vault password");
+    if(!p)return;
+    db.vaultPass=p;
+    save();
+  }
+
+  let p=prompt("Enter vault password");
+  if(p!==db.vaultPass)return alert("Wrong password");
+
+  vaultOpen=true;
+  renderVault();
+}
+
+function renderVault(){
+  content.innerHTML=`
+    <div class="card">
+      <h1>🔐 Vault</h1>
+      <div class="small">Cyber vault for app usernames and passwords</div>
+      ${edit?`
+        <button class="good" onclick="addVault()">+ Add Password</button>
+        <button class="pink" onclick="changeVaultPass()">Change Vault Password</button>`:""}
+      <div id="vaultList"></div>
+    </div>
+  `;
+
+  vaultList.innerHTML=db.vault.map((v,i)=>`
+    <div class="vault">
+      <h3>${escapeText(v.name)}</h3>
+      <div class="small">Username</div>
+      <div>${escapeText(v.user)}</div>
+      <div class="small">Password</div>
+      <div id="pass${i}">••••••••</div>
+      <button onclick="toggleVaultPass(${i})">👁 Show/Hide</button>
+      <button onclick="copyPass(${i})">📋 Copy</button>
+      ${edit?`
+        <button onclick="editVault(${i})">✏️ Edit</button>
+        <button class="danger" onclick="delVault(${i})">🗑 Delete</button>`:""}
+    </div>
+  `).join("");
+}
+
+function addVault(){
+  db.vault.push({name:prompt("Name"),user:prompt("Username"),pass:prompt("Password")});
+  save();renderVault();
+}
+
+function editVault(i){
+  let v=db.vault[i];
+  v.name=prompt("Name",v.name)||v.name;
+  v.user=prompt("Username",v.user)||v.user;
+  v.pass=prompt("Password",v.pass)||v.pass;
+  save();renderVault();
+}
+
+function delVault(i){
+  if(!confirm("Delete vault entry?"))return;
+  db.vault.splice(i,1);
+  save();renderVault();
+}
+
+function toggleVaultPass(i){
+  let el=document.getElementById("pass"+i);
+  el.innerText=el.innerText.includes("•")?db.vault[i].pass:"••••••••";
+}
+
+function copyPass(i){
+  navigator.clipboard.writeText(db.vault[i].pass);
+  alert("Password copied");
+}
+
+function changeVaultPass(){
+  let old=prompt("Current vault password");
+  if(old!==db.vaultPass)return alert("Wrong password");
+  let next=prompt("New vault password");
+  if(!next)return;
+  db.vaultPass=next;
+  save();
+  alert("Vault password changed");
+}
+
+/* VACATION */
+function showVacation(){
+  vaultOpen=false;
+  clearInterval(timer);
+
+  let used=db.vacation.booked.reduce((a,b)=>a+(+b.days||0),0);
+  let extra=db.vacation.extra.reduce((a,b)=>a+(+b.days||0),0);
+  let total=(+db.vacation.total||20)+extra;
+  let left=total-used;
+
+  content.innerHTML=`
+    <div class="card">
+      <h1>📅 Vacation</h1>
+      <div class="grid">
+        <div class="stat"><h3>Base Days</h3><div>${db.vacation.total}</div></div>
+        <div class="stat"><h3>Extra Days</h3><div>${extra}</div></div>
+        <div class="stat"><h3>Booked</h3><div>${used}</div></div>
+        <div class="stat"><h3>Remaining</h3><div>${left}</div></div>
+      </div>
+      ${edit?`
+        <button class="good" onclick="addVacation()">+ Book Leave</button>
+        <button class="pink" onclick="addExtra()">+ Add Extra Days</button>
+        <button onclick="editBaseVacation()">Edit Base Days</button>`:""}
+    </div>
+
+    <div class="card">
+      <h2>Booked Days</h2>
+      ${db.vacation.booked.map((b,i)=>`
+        <div class="row">
+          <div>📌 ${escapeText(b.date)} | ${escapeText(b.days)} days | ${escapeText(b.reason)}</div>
+          ${edit?`<div>
+            <button onclick="editVac(${i})">✏️</button>
+            <button class="danger" onclick="delVac(${i})">🗑</button>
+          </div>`:""}
+        </div>`).join("") || "<div class='small'>No bookings yet.</div>"}
+    </div>
+
+    <div class="card">
+      <h2>Extra Days History</h2>
+      ${db.vacation.extra.map((e,i)=>`
+        <div class="row">
+          <div>➕ ${escapeText(e.days)} days | ${escapeText(e.reason)}</div>
+          ${edit?`<div>
+            <button onclick="editExtra(${i})">✏️</button>
+            <button class="danger" onclick="delExtra(${i})">🗑</button>
+          </div>`:""}
+        </div>`).join("") || "<div class='small'>No extra days added yet.</div>"}
+    </div>
+  `;
+}
+
+function editBaseVacation(){
+  let n=prompt("Base vacation days",db.vacation.total);
+  if(!n)return;
+  db.vacation.total=+n;
+  save();showVacation();
+}
+
+function addVacation(){
+  db.vacation.booked.push({date:prompt("Date"),days:prompt("Days"),reason:prompt("Reason")});
+  save();showVacation();
+}
+
+function editVac(i){
+  let v=db.vacation.booked[i];
+  v.date=prompt("Date",v.date)||v.date;
+  v.days=prompt("Days",v.days)||v.days;
+  v.reason=prompt("Reason",v.reason)||v.reason;
+  save();showVacation();
+}
+
+function delVac(i){
+  if(!confirm("Delete booking?"))return;
+  db.vacation.booked.splice(i,1);
+  save();showVacation();
+}
+
+function addExtra(){
+  db.vacation.extra.push({days:prompt("Extra days"),reason:prompt("Reason")});
+  save();showVacation();
+}
+
+function editExtra(i){
+  let e=db.vacation.extra[i];
+  e.days=prompt("Extra days",e.days)||e.days;
+  e.reason=prompt("Reason",e.reason)||e.reason;
+  save();showVacation();
+}
+
+function delExtra(i){
+  if(!confirm("Delete extra days record?"))return;
+  db.vacation.extra.splice(i,1);
+  save();showVacation();
+}
+
+/* SEARCH */
+function searchAll(q){
+  q=q.toLowerCase().trim();
+  if(!q){showDashboard();return;}
+
+  clearInterval(timer);
+  let results=[];
+
+  db.folders.forEach(f=>{
+    if(f.name.toLowerCase().includes(q)) results.push(`📁 Folder: ${escapeText(f.name)}`);
+    (f.links||[]).forEach(l=>{
+      if((l.name+l.url).toLowerCase().includes(q)){
+        results.push(`🔗 <a href="${escapeText(l.url)}" target="_blank">${escapeText(l.name)}</a>`);
+      }
+    });
+  });
+
+  db.sap.forEach(s=>{
+    if((s.c+s.d+s.u).toLowerCase().includes(q)) results.push(`🧠 ${escapeText(s.c)} - ${escapeText(s.d)}`);
+  });
+
+  db.vault.forEach(v=>{
+    if((v.name+v.user).toLowerCase().includes(q)) results.push(`🔐 ${escapeText(v.name)} - ${escapeText(v.user)}`);
+  });
+
+  content.innerHTML=`
+    <div class="card">
+      <h1>🔍 Search Results</h1>
+      ${results.map(r=>`<div class="row">${r}</div>`).join("") || "<div class='small'>No results found.</div>"}
+    </div>`;
 }
 </script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBXzH-_cw3CFTPiY0ear6xfncxitL86UrQ",
+  authDomain: "my-dashboard-bc896.firebaseapp.com",
+  projectId: "my-dashboard-bc896",
+  storageBucket: "my-dashboard-bc896.firebasestorage.app",
+  messagingSenderId: "471529292578",
+  appId: "1:471529292578:web:8092ccca8f7888cff8db7b"
+};
+
+const app = initializeApp(firebaseConfig);
+const dbCloud = getFirestore(app);
+
+window.saveToCloud = async function(data){
+  await setDoc(doc(dbCloud, "dashboard", "main"), data);
+}
+
+window.loadFromCloud = async function(){
+  const snap = await getDoc(doc(dbCloud, "dashboard", "main"));
+  return snap.exists()?snap.data():null;
+}
+
+init();
+</script>
+
+</body>
+</html>
