@@ -295,11 +295,116 @@ button:hover{
   100%{box-shadow:0 0 8px rgba(0,245,255,.25)}
 }
 
+
+/* OPERATIONS HUB */
+.ops-layout{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  gap:16px;
+}
+.ops-folder{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:12px;
+  margin:8px 0;
+  border-radius:16px;
+  background:rgba(255,255,255,.06);
+  border-left:4px solid var(--purple);
+  cursor:pointer;
+}
+.ops-folder.active{
+  background:rgba(0,245,255,.14);
+  box-shadow:0 0 18px rgba(0,245,255,.18);
+}
+.ops-card{
+  padding:15px;
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(0,245,255,.10),rgba(255,43,214,.08));
+  border:1px solid rgba(255,255,255,.12);
+  margin:12px 0;
+  cursor:pointer;
+  transition:.25s;
+}
+.ops-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 0 22px rgba(0,245,255,.28);
+}
+.ops-card h3{margin:0 0 6px}
+.ops-modal-bg{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:50;
+  background:rgba(0,0,0,.68);
+  backdrop-filter:blur(12px);
+  padding:22px;
+}
+.ops-modal-bg.show{display:flex;animation:fadeIn .2s ease}
+.ops-modal{
+  width:min(1100px,96vw);
+  max-height:90vh;
+  overflow:auto;
+  padding:24px;
+  border-radius:28px;
+  background:linear-gradient(145deg,rgba(12,15,30,.98),rgba(4,6,15,.98));
+  border:1px solid rgba(0,245,255,.32);
+  box-shadow:0 0 60px rgba(0,245,255,.22);
+  animation:modalPop .25s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalPop{from{opacity:0;transform:translateY(22px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.ops-modal-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  margin-bottom:16px;
+}
+.ops-section{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:16px;
+  margin:14px 0;
+}
+.ops-step{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  padding:16px;
+  margin:14px 0;
+  border-radius:18px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.10);
+}
+.ops-img{
+  width:100%;
+  max-height:280px;
+  object-fit:contain;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.35);
+}
+.ops-form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+.ops-checks{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.ops-checks label{background:rgba(255,255,255,.07);padding:10px 12px;border-radius:14px}
+.ops-checks input{width:auto;margin:0 6px 0 0}
+.hidden{display:none!important}
+
 @media(max-width:800px){
   body{flex-direction:column}
   .sidebar{width:100%;min-height:auto}
   .main{padding:16px}
   .edit{top:12px;right:12px}
+  .ops-layout,.ops-step,.ops-form-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -312,8 +417,9 @@ button:hover{
   <div class="nav">
     <button onclick="showDashboard()">🏠 Dashboard</button>
     <button onclick="showSAP()">🧠 SAP</button>
+    <button onclick="showOperations()">⚡ Operations Hub</button>
     <button onclick="openVault()">🔐 Vault</button>
-    <button onclick="showVacation()">📅 Vacation</button>
+    <button onclick="openVacation()">📅 Vacation</button>
   </div>
 
   <hr style="border-color:rgba(255,255,255,.12)">
@@ -325,9 +431,14 @@ button:hover{
 
 <div class="main">
   <div class="topbar">
-    <input class="search" placeholder="Search links, SAP, vault, vacation..." oninput="searchAll(this.value)">
+    <input class="search" placeholder="Search links, SAP, SOPs, vault, vacation..." oninput="searchAll(this.value)">
   </div>
   <div id="content"></div>
+</div>
+
+
+<div id="opsModalBg" class="ops-modal-bg">
+  <div class="ops-modal" id="opsModal"></div>
 </div>
 
 <button class="edit" onclick="toggleEdit()" id="editBtn">✏️ EDIT OFF</button>
@@ -340,7 +451,10 @@ let db={
   sap:[],
   vault:[],
   vaultPass:null,
+  vaultPassHash:null,
+  vacationPassHash:null,
   vacation:{total:20,booked:[],extra:[]},
+  ops:{categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]},
   notes:""
 };
 
@@ -351,7 +465,16 @@ async function init(){
     if(!db.vacation) db.vacation={total:20,booked:[],extra:[]};
     if(!db.vacation.booked) db.vacation.booked=[];
     if(!db.vacation.extra) db.vacation.extra=[];
+    if(!db.ops) db.ops={categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]};
+    if(!db.ops.categories) db.ops.categories=[];
+    if(!db.ops.sops) db.ops.sops=[];
+    if(db.vaultPass && !db.vaultPassHash){
+      db.vaultPassHash=await hashPassword(db.vaultPass);
+      db.vaultPass=null;
+      save();
+    }
   }
+  if(!db.ops) db.ops={categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]};
   renderFolders();
   showDashboard();
 }
@@ -367,6 +490,24 @@ function toggleEdit(){
 
 function escapeText(x){
   return String(x ?? "").replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+}
+
+function escapeAttr(x){
+  return escapeText(x).replace(/`/g,"&#096;");
+}
+
+async function hashPassword(password){
+  const encoder=new TextEncoder();
+  const data=encoder.encode(password);
+  const hashBuffer=await crypto.subtle.digest("SHA-256",data);
+  const hashArray=Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function verifyPassword(section,typed){
+  const key=section==="Vault"?"vaultPassHash":"vacationPassHash";
+  const hash=await hashPassword(typed);
+  return hash===db[key];
 }
 
 function getWeekNumber(date){
@@ -606,17 +747,19 @@ function delSAP(i){
 }
 
 /* VAULT */
-function openVault(){
+async function openVault(){
   clearInterval(timer);
-  if(!db.vaultPass){
+
+  if(!db.vaultPassHash){
     let p=prompt("Set vault password");
     if(!p)return;
-    db.vaultPass=p;
+    db.vaultPassHash=await hashPassword(p);
+    db.vaultPass=null;
     save();
   }
 
   let p=prompt("Enter vault password");
-  if(p!==db.vaultPass)return alert("Wrong password");
+  if(!(await verifyPassword("Vault",p)))return alert("Wrong password");
 
   vaultOpen=true;
   renderVault();
@@ -679,17 +822,44 @@ function copyPass(i){
   alert("Password copied");
 }
 
-function changeVaultPass(){
+async function changeVaultPass(){
   let old=prompt("Current vault password");
-  if(old!==db.vaultPass)return alert("Wrong password");
+  if(!(await verifyPassword("Vault",old)))return alert("Wrong password");
   let next=prompt("New vault password");
   if(!next)return;
-  db.vaultPass=next;
+  db.vaultPassHash=await hashPassword(next);
+  db.vaultPass=null;
   save();
   alert("Vault password changed");
 }
 
 /* VACATION */
+async function openVacation(){
+  clearInterval(timer);
+
+  if(!db.vacationPassHash){
+    let p=prompt("Set vacation password");
+    if(!p)return;
+    db.vacationPassHash=await hashPassword(p);
+    save();
+  }
+
+  let p=prompt("Enter vacation password");
+  if(!(await verifyPassword("Vacation",p)))return alert("Wrong password");
+
+  showVacation();
+}
+
+async function changeVacationPass(){
+  let old=prompt("Current vacation password");
+  if(!(await verifyPassword("Vacation",old)))return alert("Wrong password");
+  let next=prompt("New vacation password");
+  if(!next)return;
+  db.vacationPassHash=await hashPassword(next);
+  save();
+  alert("Vacation password changed");
+}
+
 function showVacation(){
   vaultOpen=false;
   clearInterval(timer);
@@ -711,7 +881,8 @@ function showVacation(){
       ${edit?`
         <button class="good" onclick="addVacation()">+ Book Leave</button>
         <button class="pink" onclick="addExtra()">+ Add Extra Days</button>
-        <button onclick="editBaseVacation()">Edit Base Days</button>`:""}
+        <button onclick="editBaseVacation()">Edit Base Days</button>
+        <button class="pink" onclick="changeVacationPass()">Change Vacation Password</button>`:""}
     </div>
 
     <div class="card">
@@ -784,6 +955,280 @@ function delExtra(i){
   save();showVacation();
 }
 
+
+/* OPERATIONS HUB */
+let currentOpsCategory=null;
+let currentSopId=null;
+let editingSopId=null;
+
+function ensureOps(){
+  if(!db.ops) db.ops={categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]};
+  if(!db.ops.categories) db.ops.categories=[];
+  if(!db.ops.sops) db.ops.sops=[];
+  if(!currentOpsCategory) currentOpsCategory=db.ops.categories[0]||"";
+}
+
+function showOperations(){
+  vaultOpen=false;
+  clearInterval(timer);
+  ensureOps();
+  content.innerHTML=`
+    <div class="card pulse">
+      <h1 class="glow-title">⚡ Operations Hub</h1>
+      <div class="small">SOPs, troubleshooting, policies, process flows, warehouse maps, emergency contacts, and inventory guides.</div>
+    </div>
+
+    <div class="ops-layout">
+      <div class="card">
+        <h2>📁 Operations Folders</h2>
+        ${edit?`<button class="good" onclick="addOpsCategory()">+ Add Folder</button>`:""}
+        <div id="opsCategories"></div>
+      </div>
+
+      <div class="card">
+        <div class="topbar">
+          <h2 style="margin:0">📄 SOPs</h2>
+          ${edit?`<button class="good" onclick="openSopEditor()">+ Add SOP</button>`:""}
+        </div>
+        <input class="search" style="max-width:none;margin-bottom:12px" id="opsSearch" placeholder="Search SOPs live..." oninput="renderOpsSops()">
+        <div id="opsSops"></div>
+      </div>
+    </div>
+  `;
+  renderOpsCategories();
+  renderOpsSops();
+}
+
+function renderOpsCategories(){
+  ensureOps();
+  opsCategories.innerHTML=db.ops.categories.map((cat,i)=>`
+    <div class="ops-folder ${cat===currentOpsCategory?'active':''}" onclick="selectOpsCategory('${escapeAttr(cat)}')">
+      <span>📁 ${escapeText(cat)}</span>
+      ${edit?`<span>
+        <button onclick="event.stopPropagation();renameOpsCategory(${i})">✏️</button>
+        <button class="danger" onclick="event.stopPropagation();deleteOpsCategory(${i})">🗑</button>
+      </span>`:""}
+    </div>
+  `).join("") || "<div class='small'>No folders yet.</div>";
+}
+
+function selectOpsCategory(cat){
+  currentOpsCategory=cat;
+  renderOpsCategories();
+  renderOpsSops();
+}
+
+function addOpsCategory(){
+  if(!edit)return alert("Turn EDIT ON first");
+  let name=prompt("Operations folder name");
+  if(!name)return;
+  ensureOps();
+  db.ops.categories.push(name);
+  currentOpsCategory=name;
+  save();showOperations();
+}
+
+function renameOpsCategory(i){
+  let old=db.ops.categories[i];
+  let name=prompt("Folder name",old);
+  if(!name)return;
+  db.ops.categories[i]=name;
+  db.ops.sops.forEach(s=>{if(s.category===old)s.category=name});
+  currentOpsCategory=name;
+  save();showOperations();
+}
+
+function deleteOpsCategory(i){
+  let cat=db.ops.categories[i];
+  if(!confirm("Delete this Operations folder and SOPs inside it?"))return;
+  db.ops.categories.splice(i,1);
+  db.ops.sops=db.ops.sops.filter(s=>s.category!==cat);
+  currentOpsCategory=db.ops.categories[0]||"";
+  save();showOperations();
+}
+
+function renderOpsSops(){
+  ensureOps();
+  let q=(document.getElementById("opsSearch")?.value||"").toLowerCase();
+  let list=db.ops.sops.filter(s=>{
+    let text=`${s.title||""} ${s.quickFix||""} ${s.problem||""} ${s.sapCodes||""}`.toLowerCase();
+    return s.category===currentOpsCategory && text.includes(q);
+  });
+
+  opsSops.innerHTML=list.map(s=>`
+    <div class="ops-card" onclick="openSopViewer('${s.id}')">
+      <h3>${escapeText(s.title)}</h3>
+      <div class="small">${s.quickFix?"⚡ Quick fix available":"📄 SOP guide"}</div>
+    </div>
+  `).join("") || "<div class='small'>No SOPs found in this folder.</div>";
+}
+
+function openSopViewer(id){
+  let s=db.ops.sops.find(x=>x.id===id);
+  if(!s)return;
+  currentSopId=id;
+
+  opsModal.innerHTML=`
+    <div class="ops-modal-top">
+      <div>
+        <h1 style="margin:0">${escapeText(s.title)}</h1>
+        <div class="small">📁 ${escapeText(s.category)}</div>
+      </div>
+      <div>
+        ${edit?`<button onclick="openSopEditor('${s.id}')">✏️ Edit</button><button class="danger" onclick="deleteSop('${s.id}')">🗑 Delete</button>`:""}
+        <button onclick="closeOpsModal()">Close</button>
+      </div>
+    </div>
+    ${s.quickFix?`<div class="ops-section"><h2>⚡ Quick Fix</h2><div>${escapeText(s.quickFix)}</div></div>`:""}
+    ${s.problem?`<div class="ops-section"><h2>Problem / Issue</h2><div>${escapeText(s.problem)}</div></div>`:""}
+    ${s.sapCodes?`<div class="ops-section"><h2>SAP Codes</h2><div class="sap-code">${escapeText(s.sapCodes)}</div></div>`:""}
+    <div class="ops-section">
+      <h2>Steps</h2>
+      ${(s.steps||[]).map((step,i)=>`
+        <div class="ops-step">
+          <div>
+            <h3>Step ${i+1}</h3>
+            <div style="line-height:1.65">${escapeText(step.text)}</div>
+          </div>
+          <div>${step.image?`<img class="ops-img" src="${step.image}">`:`<div class="ops-img" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">No image added</div>`}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+  opsModalBg.classList.add("show");
+}
+
+function closeOpsModal(){opsModalBg.classList.remove("show")}
+
+function openSopEditor(id=null){
+  if(!edit)return alert("Turn EDIT ON first");
+  ensureOps();
+  editingSopId=id;
+  let s=db.ops.sops.find(x=>x.id===id) || {title:"",category:currentOpsCategory,quickFix:"",problem:"",sapCodes:"",steps:[{text:"",image:""}]};
+
+  opsModal.innerHTML=`
+    <div class="ops-modal-top">
+      <h1 style="margin:0">${id?"Edit SOP":"Add SOP"}</h1>
+      <button onclick="closeOpsModal()">Close</button>
+    </div>
+
+    <div class="ops-form-grid">
+      <div><div class="small">Title</div><input id="sopTitle" value="${escapeAttr(s.title)}" placeholder="Example: How to fix trailer number issue"></div>
+      <div><div class="small">Folder</div><select id="sopCategory">${db.ops.categories.map(c=>`<option ${c===s.category?'selected':''}>${escapeText(c)}</option>`).join("")}</select></div>
+    </div>
+
+    <div class="ops-checks">
+      <label><input type="checkbox" id="toggleQuickFix" ${s.quickFix?'checked':''} onchange="toggleSopOptional()"> Add Quick Fix</label>
+      <label><input type="checkbox" id="toggleProblem" ${s.problem?'checked':''} onchange="toggleSopOptional()"> Add Problem</label>
+      <label><input type="checkbox" id="toggleSapCodes" ${s.sapCodes?'checked':''} onchange="toggleSopOptional()"> Add SAP Codes</label>
+    </div>
+
+    <div id="quickFixBox"><div class="small">Quick Fix</div><textarea id="sopQuickFix" placeholder="Simple quick fix...">${escapeText(s.quickFix)}</textarea></div>
+    <div id="problemBox"><div class="small">Problem / Issue</div><textarea id="sopProblem" placeholder="Only add this if needed...">${escapeText(s.problem)}</textarea></div>
+    <div id="sapCodesBox"><div class="small">SAP Codes</div><input id="sopSapCodes" value="${escapeAttr(s.sapCodes)}" placeholder="Example: VL02N, MIGO, LT01"></div>
+
+    <h2>Steps + Images</h2>
+    <div id="sopStepsEditor"></div>
+    <button onclick="addSopStep()">+ Add Step</button>
+
+    <div style="text-align:right;margin-top:18px">
+      <button onclick="closeOpsModal()">Cancel</button>
+      <button class="good" onclick="saveSop()">Save SOP</button>
+    </div>
+  `;
+  renderSopStepsEditor(s.steps&&s.steps.length?s.steps:[{text:"",image:""}]);
+  toggleSopOptional();
+  opsModalBg.classList.add("show");
+}
+
+function toggleSopOptional(){
+  quickFixBox.classList.toggle("hidden",!toggleQuickFix.checked);
+  problemBox.classList.toggle("hidden",!toggleProblem.checked);
+  sapCodesBox.classList.toggle("hidden",!toggleSapCodes.checked);
+}
+
+function renderSopStepsEditor(steps){
+  sopStepsEditor.innerHTML=steps.map((step,i)=>`
+    <div class="ops-step sop-step-edit">
+      <div>
+        <h3>Step ${i+1}</h3>
+        <textarea class="sopStepText" placeholder="Write step instruction...">${escapeText(step.text)}</textarea>
+        <button class="danger" onclick="removeSopStep(${i})">Remove Step</button>
+      </div>
+      <div>
+        ${step.image?`<img class="ops-img" src="${step.image}">`:`<div class="ops-img" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">Image preview</div>`}
+        <input type="file" accept="image/*" onchange="uploadSopImage(event,${i})">
+        <input type="hidden" class="sopStepImage" value="${step.image||""}">
+      </div>
+    </div>
+  `).join("");
+}
+
+function getSopStepsFromEditor(){
+  return [...document.querySelectorAll(".sop-step-edit")].map(block=>({
+    text:block.querySelector(".sopStepText").value,
+    image:block.querySelector(".sopStepImage").value
+  }));
+}
+
+function addSopStep(){
+  let steps=getSopStepsFromEditor();
+  steps.push({text:"",image:""});
+  renderSopStepsEditor(steps);
+}
+
+function removeSopStep(i){
+  let steps=getSopStepsFromEditor();
+  steps.splice(i,1);
+  renderSopStepsEditor(steps.length?steps:[{text:"",image:""}]);
+}
+
+function uploadSopImage(e,i){
+  let file=e.target.files[0];
+  if(!file)return;
+  let reader=new FileReader();
+  reader.onload=function(ev){
+    let steps=getSopStepsFromEditor();
+    steps[i].image=ev.target.result;
+    renderSopStepsEditor(steps);
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveSop(){
+  let title=sopTitle.value.trim();
+  if(!title)return alert("SOP title is required");
+
+  let item={
+    id:editingSopId||crypto.randomUUID(),
+    title,
+    category:sopCategory.value,
+    quickFix:toggleQuickFix.checked?sopQuickFix.value.trim():"",
+    problem:toggleProblem.checked?sopProblem.value.trim():"",
+    sapCodes:toggleSapCodes.checked?sopSapCodes.value.trim():"",
+    steps:getSopStepsFromEditor().filter(x=>x.text.trim()||x.image)
+  };
+  if(!item.steps.length)item.steps=[{text:"No steps added yet.",image:""}];
+
+  if(editingSopId){
+    db.ops.sops=db.ops.sops.map(x=>x.id===editingSopId?item:x);
+  }else{
+    db.ops.sops.push(item);
+  }
+  currentOpsCategory=item.category;
+  save();
+  closeOpsModal();
+  showOperations();
+}
+
+function deleteSop(id){
+  if(!confirm("Delete this SOP?"))return;
+  db.ops.sops=db.ops.sops.filter(x=>x.id!==id);
+  save();
+  closeOpsModal();
+  showOperations();
+}
+
 /* SEARCH */
 function searchAll(q){
   q=q.toLowerCase().trim();
@@ -804,6 +1249,17 @@ function searchAll(q){
   db.sap.forEach(s=>{
     if((s.c+s.d+s.u).toLowerCase().includes(q)) results.push(`🧠 ${escapeText(s.c)} - ${escapeText(s.d)}`);
   });
+
+  if(db.ops){
+    db.ops.categories.forEach(c=>{
+      if(c.toLowerCase().includes(q)) results.push(`⚡ Operations Folder: ${escapeText(c)}`);
+    });
+    db.ops.sops.forEach(s=>{
+      if(((s.title||"")+(s.quickFix||"")+(s.problem||"")+(s.sapCodes||"")).toLowerCase().includes(q)){
+        results.push(`📄 SOP: ${escapeText(s.title)} <span class="small">(${escapeText(s.category)})</span>`);
+      }
+    });
+  }
 
   db.vault.forEach(v=>{
     if((v.name+v.user).toLowerCase().includes(q)) results.push(`🔐 ${escapeText(v.name)} - ${escapeText(v.user)}`);
