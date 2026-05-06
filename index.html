@@ -399,6 +399,48 @@ button:hover{
 .ops-checks input{width:auto;margin:0 6px 0 0}
 .hidden{display:none!important}
 
+.auth-modal-bg{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(14px);
+  z-index:9999;
+}
+
+.auth-modal-bg.show{display:flex;animation:fadeIn .2s ease}
+
+.auth-modal{
+  width:min(460px,94vw);
+  padding:24px;
+  border-radius:24px;
+  background:linear-gradient(135deg,rgba(15,18,30,.96),rgba(5,8,15,.98));
+  border:1px solid rgba(0,245,255,.35);
+  box-shadow:0 0 55px rgba(0,245,255,.22),0 0 28px rgba(255,43,214,.12);
+  animation:modalPop .22s ease;
+}
+
+.auth-modal h2{
+  margin:0 0 8px;
+  text-shadow:0 0 14px var(--cyan);
+}
+
+.auth-modal p{
+  color:var(--muted);
+  margin:0 0 16px;
+  line-height:1.5;
+}
+
+.auth-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:10px;
+}
+
 @media(max-width:800px){
   body{flex-direction:column}
   .sidebar{width:100%;min-height:auto}
@@ -441,6 +483,19 @@ button:hover{
   <div class="ops-modal" id="opsModal"></div>
 </div>
 
+<div id="authModalBg" class="auth-modal-bg">
+  <div class="auth-modal">
+    <h2 id="authTitle">🔐 Password Required</h2>
+    <p id="authMessage">Enter password to continue.</p>
+    <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password">
+    <div id="authExtraFields"></div>
+    <div class="auth-actions">
+      <button class="danger" onclick="cancelAuthModal()">Cancel</button>
+      <button class="good" onclick="confirmAuthModal()">Continue</button>
+    </div>
+  </div>
+</div>
+
 <button class="edit" onclick="toggleEdit()" id="editBtn">✏️ EDIT OFF</button>
 
 <script>
@@ -453,6 +508,7 @@ let db={
   vaultPass:null,
   vaultPassHash:null,
   vacationPassHash:null,
+  sharedPassHash:null,
   vacation:{total:20,booked:[],extra:[]},
   ops:{categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]},
   notes:""
@@ -468,23 +524,31 @@ async function init(){
     if(!db.ops) db.ops={categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]};
     if(!db.ops.categories) db.ops.categories=[];
     if(!db.ops.sops) db.ops.sops=[];
-    if(db.vaultPass && !db.vaultPassHash){
-      db.vaultPassHash=await hashPassword(db.vaultPass);
-      db.vaultPass=null;
-      save();
-    }
+    await migrateToSharedPassword();
   }
   if(!db.ops) db.ops={categories:["SAP","Logistics","Troubleshooting","Policies","Warehouse Maps","Emergency Contacts","Inventory Guides"],sops:[]};
+  await migrateToSharedPassword();
   renderFolders();
   showDashboard();
 }
 
 function save(){ saveToCloud(db); }
 
-function toggleEdit(){
-  edit=!edit;
-  editBtn.innerText=edit?"✏️ EDIT ON":"✏️ EDIT OFF";
-  editBtn.classList.toggle("on",edit);
+async function toggleEdit(){
+  if(edit){
+    edit=false;
+    editBtn.innerText="✏️ EDIT OFF";
+    editBtn.classList.remove("on");
+    renderFolders();
+    return;
+  }
+
+  const ok=await requireSharedPassword("✏️ Edit Locked","Enter your dashboard password to turn EDIT ON.");
+  if(!ok)return;
+
+  edit=true;
+  editBtn.innerText="✏️ EDIT ON";
+  editBtn.classList.add("on");
   renderFolders();
 }
 
@@ -504,10 +568,138 @@ async function hashPassword(password){
   return hashArray.map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+async function migrateToSharedPassword(){
+  if(!db.sharedPassHash){
+    if(db.vaultPass){
+      db.sharedPassHash=await hashPassword(db.vaultPass);
+      db.vaultPass=null;
+    }else if(db.vaultPassHash){
+      db.sharedPassHash=db.vaultPassHash;
+    }else if(db.vacationPassHash){
+      db.sharedPassHash=db.vacationPassHash;
+    }
+  }
+
+  if(db.sharedPassHash){
+    db.vaultPassHash=db.sharedPassHash;
+    db.vacationPassHash=db.sharedPassHash;
+    save();
+  }
+}
+
+async function ensureSharedPassword(){
+  await migrateToSharedPassword();
+
+  if(!db.sharedPassHash){
+    const first=await askPasswordModal(
+      "🔐 Set Dashboard Password",
+      "Create one password for Vault, Vacation, and EDIT mode. It will be saved as a hash.",
+      "Create password"
+    );
+    if(!first)return false;
+
+    const confirm=await askPasswordModal(
+      "🔐 Confirm Password",
+      "Type the same password again.",
+      "Confirm password"
+    );
+
+    if(first!==confirm){
+      alert("Passwords do not match.");
+      return ensureSharedPassword();
+    }
+
+    db.sharedPassHash=await hashPassword(first);
+    db.vaultPassHash=db.sharedPassHash;
+    db.vacationPassHash=db.sharedPassHash;
+    db.vaultPass=null;
+    save();
+  }
+
+  return true;
+}
+
+async function verifySharedPassword(typed){
+  await migrateToSharedPassword();
+  const hash=await hashPassword(typed || "");
+  return hash===db.sharedPassHash;
+}
+
+async function requireSharedPassword(title="🔐 Password Required",message="Enter your dashboard password to continue."){
+  const ready=await ensureSharedPassword();
+  if(!ready)return false;
+
+  const typed=await askPasswordModal(title,message,"Password");
+  if(typed===null)return false;
+
+  if(!(await verifySharedPassword(typed))){
+    alert("Wrong password.");
+    return false;
+  }
+
+  return true;
+}
+
+function askPasswordModal(title,message,placeholder="Password",extraHtml=""){
+  return new Promise(resolve=>{
+    window.authModalResolve=resolve;
+    authTitle.innerText=title;
+    authMessage.innerText=message;
+    authPassword.value="";
+    authPassword.placeholder=placeholder;
+    authExtraFields.innerHTML=extraHtml;
+    authModalBg.classList.add("show");
+    setTimeout(()=>authPassword.focus(),80);
+  });
+}
+
+function cancelAuthModal(){
+  authModalBg.classList.remove("show");
+  if(window.authModalResolve){
+    window.authModalResolve(null);
+    window.authModalResolve=null;
+  }
+}
+
+function confirmAuthModal(){
+  const value=authPassword.value;
+  authModalBg.classList.remove("show");
+  if(window.authModalResolve){
+    window.authModalResolve(value);
+    window.authModalResolve=null;
+  }
+}
+
+document.addEventListener("keydown",e=>{
+  if(!authModalBg.classList.contains("show"))return;
+  if(e.key==="Enter")confirmAuthModal();
+  if(e.key==="Escape")cancelAuthModal();
+});
+
+async function changeSharedPassword(){
+  const ready=await ensureSharedPassword();
+  if(!ready)return;
+
+  const oldPass=await askPasswordModal("🔐 Current Password","Enter current dashboard password.","Current password");
+  if(oldPass===null)return;
+  if(!(await verifySharedPassword(oldPass)))return alert("Wrong password.");
+
+  const next=await askPasswordModal("🔐 New Password","Enter new password for Vault, Vacation, and EDIT mode.","New password");
+  if(!next || next.length<4)return alert("Password must be at least 4 characters.");
+
+  const confirm=await askPasswordModal("🔐 Confirm New Password","Type the new password again.","Confirm new password");
+  if(next!==confirm)return alert("Passwords do not match.");
+
+  db.sharedPassHash=await hashPassword(next);
+  db.vaultPassHash=db.sharedPassHash;
+  db.vacationPassHash=db.sharedPassHash;
+  db.vaultPass=null;
+  save();
+  alert("Password changed for Vault, Vacation, and EDIT mode.");
+}
+
 async function verifyPassword(section,typed){
-  const key=section==="Vault"?"vaultPassHash":"vacationPassHash";
-  const hash=await hashPassword(typed);
-  return hash===db[key];
+  return verifySharedPassword(typed);
 }
 
 function getWeekNumber(date){
@@ -750,16 +942,8 @@ function delSAP(i){
 async function openVault(){
   clearInterval(timer);
 
-  if(!db.vaultPassHash){
-    let p=prompt("Set vault password");
-    if(!p)return;
-    db.vaultPassHash=await hashPassword(p);
-    db.vaultPass=null;
-    save();
-  }
-
-  let p=prompt("Enter vault password");
-  if(!(await verifyPassword("Vault",p)))return alert("Wrong password");
+  const ok=await requireSharedPassword("🔐 Vault Locked","Enter your dashboard password to open Vault.");
+  if(!ok)return;
 
   vaultOpen=true;
   renderVault();
@@ -772,7 +956,7 @@ function renderVault(){
       <div class="small">Cyber vault for app usernames and passwords</div>
       ${edit?`
         <button class="good" onclick="addVault()">+ Add Password</button>
-        <button class="pink" onclick="changeVaultPass()">Change Vault Password</button>`:""}
+        <button class="pink" onclick="changeVaultPass()">Change Dashboard Password</button>`:""}
       <div id="vaultList"></div>
     </div>
   `;
@@ -793,16 +977,26 @@ function renderVault(){
   `).join("");
 }
 
-function addVault(){
-  db.vault.push({name:prompt("Name"),user:prompt("Username"),pass:prompt("Password")});
+async function addVault(){
+  const name=prompt("Name");
+  const user=prompt("Username");
+  const pass=await askPasswordModal("🔐 Add Vault Password","Type the password for this vault item. It will be hidden while typing.","Password");
+  if(!name||!user||pass===null)return;
+  db.vault.push({name,user,pass});
   save();renderVault();
 }
 
-function editVault(i){
+async function editVault(i){
   let v=db.vault[i];
   v.name=prompt("Name",v.name)||v.name;
   v.user=prompt("Username",v.user)||v.user;
-  v.pass=prompt("Password",v.pass)||v.pass;
+
+  const changePass=confirm("Change this saved password?");
+  if(changePass){
+    const nextPass=await askPasswordModal("🔐 Edit Vault Password","Type the new password. It will be hidden while typing.","New password");
+    if(nextPass!==null)v.pass=nextPass;
+  }
+
   save();renderVault();
 }
 
@@ -823,41 +1017,21 @@ function copyPass(i){
 }
 
 async function changeVaultPass(){
-  let old=prompt("Current vault password");
-  if(!(await verifyPassword("Vault",old)))return alert("Wrong password");
-  let next=prompt("New vault password");
-  if(!next)return;
-  db.vaultPassHash=await hashPassword(next);
-  db.vaultPass=null;
-  save();
-  alert("Vault password changed");
+  await changeSharedPassword();
 }
 
 /* VACATION */
 async function openVacation(){
   clearInterval(timer);
 
-  if(!db.vacationPassHash){
-    let p=prompt("Set vacation password");
-    if(!p)return;
-    db.vacationPassHash=await hashPassword(p);
-    save();
-  }
-
-  let p=prompt("Enter vacation password");
-  if(!(await verifyPassword("Vacation",p)))return alert("Wrong password");
+  const ok=await requireSharedPassword("📅 Vacation Locked","Enter your dashboard password to open Vacation.");
+  if(!ok)return;
 
   showVacation();
 }
 
 async function changeVacationPass(){
-  let old=prompt("Current vacation password");
-  if(!(await verifyPassword("Vacation",old)))return alert("Wrong password");
-  let next=prompt("New vacation password");
-  if(!next)return;
-  db.vacationPassHash=await hashPassword(next);
-  save();
-  alert("Vacation password changed");
+  await changeSharedPassword();
 }
 
 function showVacation(){
@@ -882,7 +1056,7 @@ function showVacation(){
         <button class="good" onclick="addVacation()">+ Book Leave</button>
         <button class="pink" onclick="addExtra()">+ Add Extra Days</button>
         <button onclick="editBaseVacation()">Edit Base Days</button>
-        <button class="pink" onclick="changeVacationPass()">Change Vacation Password</button>`:""}
+        <button class="pink" onclick="changeVacationPass()">Change Dashboard Password</button>`:""}
     </div>
 
     <div class="card">
